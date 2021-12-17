@@ -22,12 +22,14 @@ import (
 	"github.com/panjf2000/gnet/internal/netpoll"
 	"github.com/panjf2000/gnet/pkg/errors"
 	"github.com/panjf2000/gnet/pkg/logging"
+	"github.com/xtaci/kcp-go/v5"
 )
 
 type listener struct {
 	once             sync.Once
 	ln               net.Listener
 	packetConn       net.PacketConn
+	kcpListener      net.Listener
 	addr             net.Addr
 	address, network string
 }
@@ -51,6 +53,11 @@ func (ln *listener) normalize() (err error) {
 			return
 		}
 		ln.addr = ln.packetConn.LocalAddr()
+	case "kcp":
+		if ln.kcpListener, err = kcp.Listen(ln.address); err != nil {
+			return
+		}
+		ln.addr = ln.kcpListener.Addr()
 	default:
 		err = errors.ErrUnsupportedProtocol
 	}
@@ -64,6 +71,9 @@ func (ln *listener) close() {
 		}
 		if ln.packetConn != nil {
 			logging.Error(ln.packetConn.Close())
+		}
+		if(ln.kcpListener != nil){
+			logging.Error(ln.kcpListener.Close())
 		}
 		if ln.network == "unix" {
 			logging.Error(os.RemoveAll(ln.address))

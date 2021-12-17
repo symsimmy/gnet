@@ -60,6 +60,9 @@ func (ln *listener) normalize() (err error) {
 	case "unix":
 		_ = os.RemoveAll(ln.address)
 		ln.fd, ln.addr, err = socket.UnixSocket(ln.network, ln.address, true, ln.sockOpts...)
+	case "kcp":
+		_ = os.RemoveAll(ln.address)
+		ln.fd, ln.addr, err = socket.KCPSocket(ln.network, ln.address, true, ln.sockOpts...)
 	default:
 		err = errors.ErrUnsupportedProtocol
 	}
